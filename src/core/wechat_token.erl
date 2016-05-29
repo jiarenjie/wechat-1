@@ -11,7 +11,7 @@
 
 -define(SERVER, ?MODULE).
 
--define(TOKEN_STORE, (wechat_token_backend:backend())).
+-define(TOKEN_BACKEND, (wechat_token_backend:backend())).
 
 -record(state, {}).
 
@@ -27,7 +27,7 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 
 %%%===================================================================
@@ -46,9 +46,10 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-  Backend = redis,
-  {Mod, Code} = dynamic_compile:from_string(sm_backend(Backend)),
+  {Backend, Opts} = wechat_config:get_global_option(wechat_token_backend),
+  {Mod, Code} = dynamic_compile:from_string(token_backend(Backend)),
   code:load_binary(Mod, "wechat_token_backend.erl", Code),
+  ?TOKEN_BACKEND:init(Opts),
   {ok, #state{}}.
 
 %%--------------------------------------------------------------------
@@ -65,8 +66,9 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(_Msg _From, State) ->
-    {reply, Value, State}.
+handle_call(_Msg,_From, State) ->
+  Value = ok,
+  {reply, Value, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -79,7 +81,7 @@ handle_call(_Msg _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_cast(_Msg, State) ->
-    {noreply, State}.
+  {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -92,7 +94,7 @@ handle_cast(_Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info(_Info, State) ->
-    {noreply, State}.
+  {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -106,7 +108,7 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, _State) ->
-    ok.
+  ok.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -117,13 +119,13 @@ terminate(_Reason, _State) ->
 %% @end
 %%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+  {ok, State}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
--spec store_backend(atom()) -> string().
-store_backend(Backend) ->
+-spec token_backend(atom()) -> string().
+token_backend(Backend) ->
   lists:flatten(
     ["-module(wechat_token_backend).
       -export([backend/0]).
