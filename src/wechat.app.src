@@ -1,0 +1,12 @@
+{application, wechat,
+ [
+  {description, "wechat SDK of erlang"},
+  {vsn, "1.0.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+				  crypto
+                 ]},
+  {env, []}
+ ]}.
